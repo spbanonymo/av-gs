@@ -7,7 +7,8 @@
     <script src="https://unpkg.com/wavesurfer.js"></script>
     <style>
         .example { margin-bottom: 40px; }
-        .waveform { margin-bottom: 20px; }
+        .waveform-container { display: flex; flex-direction: column; margin-bottom: 20px; }
+        .waveform { height: 64px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -20,37 +21,85 @@
         <img src="assets/images/kitchen.png" alt="Living Room Scene" width="100%">
         
         <h3>AV-NeRF Audio</h3>
-        <div id="waveform1" class="waveform"></div>
-        <button class="play-button" data-waveform="waveform1">Play/Pause</button>
+        <div id="waveform-container1" class="waveform-container">
+            <div id="waveform1-left" class="waveform"></div>
+            <div id="waveform1-right" class="waveform"></div>
+        </div>
+        <button class="play-button" data-audio="audio1">Play/Pause</button>
 
         <h3>AV-GS Audio</h3>
-        <div id="waveform2" class="waveform"></div>
-        <button class="play-button" data-waveform="waveform2">Play/Pause</button>
+        <div id="waveform-container2" class="waveform-container">
+            <div id="waveform2-left" class="waveform"></div>
+            <div id="waveform2-right" class="waveform"></div>
+        </div>
+        <button class="play-button" data-audio="audio2">Play/Pause</button>
     </div>
 
-    <!-- Repeat for other examples -->
+    <audio id="audio1" src="assets/audio/avnerf_kitchen_audio.wav"></audio>
+    <audio id="audio2" src="assets/audio/avgs_kitchen_audio.wav"></audio>
 
     <script>
-        function createWavesurfer(containerId, audioSrc) {
-            const wavesurfer = WaveSurfer.create({
-                container: `#${containerId}`,
+        function createStereoWavesurfer(audioId, leftContainerId, rightContainerId) {
+            const audioElement = document.getElementById(audioId);
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaElementSource(audioElement);
+            const splitter = audioContext.createChannelSplitter(2);
+
+            source.connect(splitter);
+            splitter.connect(audioContext.destination, 0, 0);
+            splitter.connect(audioContext.destination, 1, 1);
+
+            const leftWavesurfer = WaveSurfer.create({
+                container: `#${leftContainerId}`,
                 waveColor: 'violet',
-                progressColor: 'purple'
+                progressColor: 'purple',
+                height: 64,
+                cursorWidth: 0,
+                interact: false
             });
-            wavesurfer.load(audioSrc);
-            return wavesurfer;
+
+            const rightWavesurfer = WaveSurfer.create({
+                container: `#${rightContainerId}`,
+                waveColor: 'lightblue',
+                progressColor: 'blue',
+                height: 64,
+                cursorWidth: 0,
+                interact: false
+            });
+
+            const analyserLeft = audioContext.createAnalyser();
+            const analyserRight = audioContext.createAnalyser();
+            splitter.connect(analyserLeft, 0);
+            splitter.connect(analyserRight, 1);
+
+            function drawWaveform() {
+                const dataArrayLeft = new Uint8Array(analyserLeft.frequencyBinCount);
+                const dataArrayRight = new Uint8Array(analyserRight.frequencyBinCount);
+                
+                analyserLeft.getByteTimeDomainData(dataArrayLeft);
+                analyserRight.getByteTimeDomainData(dataArrayRight);
+
+                leftWavesurfer.loadDecodedBuffer(dataArrayLeft);
+                rightWavesurfer.loadDecodedBuffer(dataArrayRight);
+
+                requestAnimationFrame(drawWaveform);
+            }
+
+            drawWaveform();
+
+            return audioElement;
         }
 
-        const wavesurfer1 = createWavesurfer('waveform1', 'assets/audio/avnerf_kitchen_audio.wav');
-        const wavesurfer2 = createWavesurfer('waveform2', 'assets/audio/avgs_kitchen_audio.wav');
+        const audio1 = createStereoWavesurfer('audio1', 'waveform1-left', 'waveform1-right');
+        const audio2 = createStereoWavesurfer('audio2', 'waveform2-left', 'waveform2-right');
 
         document.querySelectorAll('.play-button').forEach(button => {
             button.addEventListener('click', function() {
-                const waveformId = this.dataset.waveform;
-                if (waveformId === 'waveform1') {
-                    wavesurfer1.playPause();
-                } else if (waveformId === 'waveform2') {
-                    wavesurfer2.playPause();
+                const audioId = this.dataset.audio;
+                if (audioId === 'audio1') {
+                    if (audio1.paused) audio1.play(); else audio1.pause();
+                } else if (audioId === 'audio2') {
+                    if (audio2.paused) audio2.play(); else audio2.pause();
                 }
             });
         });
