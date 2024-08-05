@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AV-GS: Audio-Visual Gaussian Splatting for Novel-View Audio Synthesis</title>
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+    <style>
+        .example { margin-bottom: 40px; }
+        .waveform { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>AV-GS: Audio-Visual Gaussian Splatting for Novel-View Audio Synthesis</h1>
+    
+    <p>This repository contains the qualitative audio samples rendered from AV-GS, a novel approach for novel-view audio synthesis.</p>
+
+    <div class="example">
+        <h2>Example 1: Living Room</h2>
+        <img src="assets/images/kitchen.png" alt="Living Room Scene" width="100%">
+        
+        <h3>AV-NeRF Audio</h3>
+        <div id="waveform1" class="waveform"></div>
+        <button class="play-button" data-waveform="waveform1">Play/Pause</button>
+
+        <h3>AV-GS Audio</h3>
+        <div id="waveform2" class="waveform"></div>
+        <button class="play-button" data-waveform="waveform2">Play/Pause</button>
+    </div>
+
+    <!-- Repeat for other examples -->
+
+    <script>
+        function createWavesurfer(containerId, audioSrc) {
+            const wavesurfer = WaveSurfer.create({
+                container: `#${containerId}`,
+                waveColor: 'violet',
+                progressColor: 'purple'
+            });
+            wavesurfer.load(audioSrc);
+            return wavesurfer;
+        }
+
+        const wavesurfer1 = createWavesurfer('waveform1', 'assets/audio/avnerf_kitchen_audio.wav');
+        const wavesurfer2 = createWavesurfer('waveform2', 'assets/audio/avgs_kitchen_audio.wav');
+
+        document.querySelectorAll('.play-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const waveformId = this.dataset.waveform;
+                if (waveformId === 'waveform1') {
+                    wavesurfer1.playPause();
+                } else if (waveformId === 'waveform2') {
+                    wavesurfer2.playPause();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
